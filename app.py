@@ -1,0 +1,690 @@
+import streamlit as st
+import numpy as np
+import pandas as pd
+import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.models import load_model
+from tensorflow.keras.losses import MeanSquaredError
+
+# ================================
+# Page Config
+# ================================
+st.set_page_config(
+    page_title="Prediksi Nilai Siswa",
+    page_icon="🎓",
+    layout="wide"
+)
+
+# ================================
+# Custom CSS
+# ================================
+st.markdown("""
+<style>
+    .main {
+        padding: 2rem;
+    }
+    .stButton>button {
+        width: 100%;
+        background-color: #4CAF50;
+        color: white;
+        padding: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+        border-radius: 10px;
+        border: none;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #45a049;
+        transform: scale(1.02);
+    }
+    .prediction-box {
+        padding: 2rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 1rem 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .info-box {
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #f0f2f6;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ================================
+# Header
+# ================================
+st.title("🎓 Prediksi Nilai Akhir Siswa (G3)")
+st.markdown("---")
+st.info("📊 Aplikasi ini menggunakan 2 algoritma Machine Learning: **Artificial Neural Network (ANN)** & **Random Forest**")
+
+# ================================
+# Load Models
+# ================================
+@st.cache_resource
+def load_models():
+    ann = load_model("model/model_ann_student_mat.h5", compile=False)
+    ann.compile(optimizer='adam', loss='mse', metrics=['mae'])
+    rf = joblib.load("model/random_forest_student_mat.pkl")
+    scaler_obj = joblib.load("model/scaler.pkl")
+    return ann, rf, scaler_obj
+
+# ================================
+# Load Models
+# ================================
+@st.cache_resource
+def load_models():
+    ann = load_model("model/model_ann_student_mat.h5", compile=False)
+    ann.compile(optimizer='adam', loss='mse', metrics=['mae'])
+    rf = joblib.load("model/random_forest_student_mat.pkl")
+    scaler_obj = joblib.load("model/scaler.pkl")
+    return ann, rf, scaler_obj
+
+ann_model, rf_model, scaler = load_models()
+
+# ================================
+# Load and Prepare Data for Evaluation
+# ================================
+@st.cache_data
+def load_data():
+    df = pd.read_csv("data/student-mat.csv", sep=";")
+    df_encoded = pd.get_dummies(df, drop_first=True)
+    X = df_encoded.drop("G3", axis=1)
+    y = df_encoded["G3"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    return X_train, X_test, y_train, y_test
+
+X_train, X_test, y_train, y_test = load_data()
+
+# ================================
+# Sidebar Navigation
+# ================================
+st.sidebar.title("🎯 Menu Navigasi")
+page = st.sidebar.radio(
+    "Pilih Halaman:",
+    ["🏠 Prediksi Nilai", "🔢 Prediksi Data Numerik", "✅ Prediksi Data Kategorikal", "📊 Analisis Data Numerik", "📋 Analisis Data Kategorikal", "📈 Evaluasi Model"]
+)
+
+# ================================
+# Page: Prediksi Nilai
+# ================================
+if page == "🏠 Prediksi Nilai":
+    st.title("🎓 Prediksi Nilai Akhir Siswa (G3)")
+    st.markdown("---")
+    st.info("📊 Aplikasi ini menggunakan 2 algoritma Machine Learning: **Artificial Neural Network (ANN)** & **Random Forest**")
+
+    # ================================
+    # Input Features dengan Tabs
+    # ================================
+    st.markdown("### 📝 Input Data Siswa")
+
+    # Definisi fitur dengan kategori
+    numeric_features = {
+        'age': ('Umur', 15, 22),
+        'Medu': ('Pendidikan Ibu (0-4)', 0, 4),
+        'Fedu': ('Pendidikan Ayah (0-4)', 0, 4),
+        'traveltime': ('Waktu Perjalanan (1-4)', 1, 4),
+        'studytime': ('Waktu Belajar (1-4)', 1, 4),
+        'failures': ('Jumlah Kegagalan (0-4)', 0, 4),
+        'famrel': ('Hubungan Keluarga (1-5)', 1, 5),
+        'freetime': ('Waktu Luang (1-5)', 1, 5),
+        'goout': ('Keluar bersama Teman (1-5)', 1, 5),
+        'Dalc': ('Konsumsi Alkohol Hari Kerja (1-5)', 1, 5),
+        'Walc': ('Konsumsi Alkohol Akhir Pekan (1-5)', 1, 5),
+        'health': ('Status Kesehatan (1-5)', 1, 5),
+        'absences': ('Jumlah Absen (0-93)', 0, 93),
+        'G1': ('Nilai Periode 1 (0-20)', 0, 20),
+        'G2': ('Nilai Periode 2 (0-20)', 0, 20)
+    }
+
+    categorical_features = [
+        'school_MS', 'sex_M', 'address_U', 'famsize_LE3', 'Pstatus_T',
+        'Mjob_health', 'Mjob_other', 'Mjob_services', 'Mjob_teacher',
+        'Fjob_health', 'Fjob_other', 'Fjob_services', 'Fjob_teacher',
+        'reason_home', 'reason_other', 'reason_reputation',
+        'guardian_mother', 'guardian_other',
+        'schoolsup_yes', 'famsup_yes', 'paid_yes', 'activities_yes', 'nursery_yes',
+        'higher_yes', 'internet_yes', 'romantic_yes'
+    ]
+
+    tab1, tab2 = st.tabs(["📊 Data Numerik", "✅ Data Kategorikal"])
+
+    inputs = []
+
+    with tab1:
+        cols = st.columns(3)
+        for idx, (key, (label, min_val, max_val)) in enumerate(numeric_features.items()):
+            with cols[idx % 3]:
+                val = st.number_input(label, min_value=min_val, max_value=max_val, value=min_val, step=1)
+                inputs.append(float(val))
+
+    with tab2:
+        st.write("**Pilih fitur kategorikal yang sesuai (1 = Ya, 0 = Tidak)**")
+        cols = st.columns(3)
+        for idx, feature in enumerate(categorical_features):
+            with cols[idx % 3]:
+                val = st.checkbox(feature.replace('_', ' ').title(), value=False)
+                inputs.append(1.0 if val else 0.0)
+
+    inputs = np.array(inputs).reshape(1, -1)
+
+    # ================================
+    # Predict Section
+    # ================================
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown("### 🤖 Pilih Algoritma Prediksi")
+        algo = st.selectbox(
+            "Algoritma:",
+            ["Artificial Neural Network (ANN)", "Random Forest"],
+            label_visibility="collapsed"
+        )
+        
+        predict_btn = st.button("🚀 PREDIKSI NILAI", use_container_width=True)
+
+    if predict_btn:
+        with st.spinner('⏳ Sedang memproses prediksi...'):
+            if algo == "Artificial Neural Network (ANN)":
+                X_scaled = scaler.transform(inputs)
+                pred = ann_model.predict(X_scaled, verbose=0)[0][0]
+            else:
+                pred = rf_model.predict(inputs)[0]
+        
+        st.markdown(f"""
+        <div class="prediction-box">
+            🎯 Hasil Prediksi Nilai G3<br>
+            <span style="font-size: 3rem;">{pred:.2f}</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Interpretasi hasil
+        if pred >= 16:
+            st.success("🌟 **Excellent!** Prediksi menunjukkan nilai sangat baik!")
+        elif pred >= 14:
+            st.success("✨ **Very Good!** Prediksi menunjukkan nilai baik!")
+        elif pred >= 12:
+            st.info("👍 **Good!** Prediksi menunjukkan nilai cukup baik!")
+        elif pred >= 10:
+            st.warning("⚠️ **Fair!** Prediksi menunjukkan nilai cukup, perlu peningkatan!")
+        else:
+            st.error("🔻 **Needs Improvement!** Prediksi menunjukkan nilai kurang, butuh usaha lebih!")
+
+# ================================
+# Page: Prediksi Data Numerik
+# ================================
+elif page == "🔢 Prediksi Data Numerik":
+    st.title("🔢 Prediksi Berdasarkan Data Numerik")
+    st.markdown("---")
+    st.info("📊 Halaman ini fokus pada prediksi menggunakan fitur numerik dengan asumsi fitur kategorikal = 0")
+    
+    st.markdown("### 📝 Input Data Numerik Siswa")
+    
+    numeric_features = {
+        'age': ('Umur', 15, 22),
+        'Medu': ('Pendidikan Ibu (0-4)', 0, 4),
+        'Fedu': ('Pendidikan Ayah (0-4)', 0, 4),
+        'traveltime': ('Waktu Perjalanan (1-4)', 1, 4),
+        'studytime': ('Waktu Belajar (1-4)', 1, 4),
+        'failures': ('Jumlah Kegagalan (0-4)', 0, 4),
+        'famrel': ('Hubungan Keluarga (1-5)', 1, 5),
+        'freetime': ('Waktu Luang (1-5)', 1, 5),
+        'goout': ('Keluar bersama Teman (1-5)', 1, 5),
+        'Dalc': ('Konsumsi Alkohol Hari Kerja (1-5)', 1, 5),
+        'Walc': ('Konsumsi Alkohol Akhir Pekan (1-5)', 1, 5),
+        'health': ('Status Kesehatan (1-5)', 1, 5),
+        'absences': ('Jumlah Absen (0-93)', 0, 93),
+        'G1': ('Nilai Periode 1 (0-20)', 0, 20),
+        'G2': ('Nilai Periode 2 (0-20)', 0, 20)
+    }
+    
+    inputs_numeric = []
+    
+    cols = st.columns(3)
+    for idx, (key, (label, min_val, max_val)) in enumerate(numeric_features.items()):
+        with cols[idx % 3]:
+            val = st.number_input(label, min_value=min_val, max_value=max_val, value=min_val, step=1, key=f"pred_num_{key}")
+            inputs_numeric.append(float(val))
+    
+    # Add zeros for categorical features (26 features)
+    categorical_features_count = 26
+    for i in range(categorical_features_count):
+        inputs_numeric.append(0.0)
+    
+    inputs_array = np.array(inputs_numeric).reshape(1, -1)
+    
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown("### 🤖 Pilih Algoritma Prediksi")
+        algo = st.selectbox(
+            "Algoritma:",
+            ["Artificial Neural Network (ANN)", "Random Forest"],
+            label_visibility="collapsed",
+            key="numeric_algo"
+        )
+        
+        predict_btn = st.button("🚀 PREDIKSI NILAI", use_container_width=True, key="numeric_predict")
+    
+    if predict_btn:
+        with st.spinner('⏳ Sedang memproses prediksi...'):
+            if algo == "Artificial Neural Network (ANN)":
+                X_scaled = scaler.transform(inputs_array)
+                pred = ann_model.predict(X_scaled, verbose=0)[0][0]
+            else:
+                pred = rf_model.predict(inputs_array)[0]
+        
+        st.markdown(f"""
+        <div class="prediction-box">
+            🎯 Hasil Prediksi Nilai G3<br>
+            <span style="font-size: 3rem;">{pred:.2f}</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Interpretasi hasil
+        if pred >= 16:
+            st.success("🌟 **Excellent!** Prediksi menunjukkan nilai sangat baik!")
+        elif pred >= 14:
+            st.success("✨ **Very Good!** Prediksi menunjukkan nilai baik!")
+        elif pred >= 12:
+            st.info("👍 **Good!** Prediksi menunjukkan nilai cukup baik!")
+        elif pred >= 10:
+            st.warning("⚠️ **Fair!** Prediksi menunjukkan nilai cukup, perlu peningkatan!")
+        else:
+            st.error("🔻 **Needs Improvement!** Prediksi menunjukkan nilai kurang, butuh usaha lebih!")
+        
+        st.markdown("---")
+        st.info("💡 **Catatan:** Prediksi ini menggunakan asumsi semua fitur kategorikal bernilai 0 (default)")
+
+# ================================
+# Page: Prediksi Data Kategorikal
+# ================================
+elif page == "✅ Prediksi Data Kategorikal":
+    st.title("✅ Prediksi Berdasarkan Data Lengkap")
+    st.markdown("---")
+    st.info("📊 Halaman ini memerlukan input data numerik DAN kategorikal untuk prediksi yang akurat")
+    
+    st.markdown("### 📝 Input Data Siswa")
+    
+    # Numeric Features
+    st.subheader("🔢 Data Numerik")
+    
+    numeric_features = {
+        'age': ('Umur', 15, 22),
+        'Medu': ('Pendidikan Ibu (0-4)', 0, 4),
+        'Fedu': ('Pendidikan Ayah (0-4)', 0, 4),
+        'traveltime': ('Waktu Perjalanan (1-4)', 1, 4),
+        'studytime': ('Waktu Belajar (1-4)', 1, 4),
+        'failures': ('Jumlah Kegagalan (0-4)', 0, 4),
+        'famrel': ('Hubungan Keluarga (1-5)', 1, 5),
+        'freetime': ('Waktu Luang (1-5)', 1, 5),
+        'goout': ('Keluar bersama Teman (1-5)', 1, 5),
+        'Dalc': ('Konsumsi Alkohol Hari Kerja (1-5)', 1, 5),
+        'Walc': ('Konsumsi Alkohol Akhir Pekan (1-5)', 1, 5),
+        'health': ('Status Kesehatan (1-5)', 1, 5),
+        'absences': ('Jumlah Absen (0-93)', 0, 93),
+        'G1': ('Nilai Periode 1 (0-20)', 0, 20),
+        'G2': ('Nilai Periode 2 (0-20)', 0, 20)
+    }
+    
+    inputs_full = []
+    
+    cols = st.columns(4)
+    for idx, (key, (label, min_val, max_val)) in enumerate(numeric_features.items()):
+        with cols[idx % 4]:
+            val = st.number_input(label, min_value=min_val, max_value=max_val, value=min_val, step=1, key=f"pred_cat_num_{key}")
+            inputs_full.append(float(val))
+    
+    # Categorical Features
+    st.markdown("---")
+    st.subheader("✅ Data Kategorikal")
+    st.write("**Centang fitur yang sesuai dengan kondisi siswa**")
+    
+    categorical_features = [
+        'school_MS', 'sex_M', 'address_U', 'famsize_LE3', 'Pstatus_T',
+        'Mjob_health', 'Mjob_other', 'Mjob_services', 'Mjob_teacher',
+        'Fjob_health', 'Fjob_other', 'Fjob_services', 'Fjob_teacher',
+        'reason_home', 'reason_other', 'reason_reputation',
+        'guardian_mother', 'guardian_other',
+        'schoolsup_yes', 'famsup_yes', 'paid_yes', 'activities_yes', 'nursery_yes',
+        'higher_yes', 'internet_yes', 'romantic_yes'
+    ]
+    
+    cols = st.columns(4)
+    for idx, feature in enumerate(categorical_features):
+        with cols[idx % 4]:
+            val = st.checkbox(feature.replace('_', ' ').title(), value=False, key=f"pred_cat_{feature}")
+            inputs_full.append(1.0 if val else 0.0)
+    
+    inputs_array = np.array(inputs_full).reshape(1, -1)
+    
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown("### 🤖 Pilih Algoritma Prediksi")
+        algo = st.selectbox(
+            "Algoritma:",
+            ["Artificial Neural Network (ANN)", "Random Forest"],
+            label_visibility="collapsed",
+            key="categorical_algo"
+        )
+        
+        predict_btn = st.button("🚀 PREDIKSI NILAI", use_container_width=True, key="categorical_predict")
+    
+    if predict_btn:
+        with st.spinner('⏳ Sedang memproses prediksi...'):
+            if algo == "Artificial Neural Network (ANN)":
+                X_scaled = scaler.transform(inputs_array)
+                pred = ann_model.predict(X_scaled, verbose=0)[0][0]
+            else:
+                pred = rf_model.predict(inputs_array)[0]
+        
+        st.markdown(f"""
+        <div class="prediction-box">
+            🎯 Hasil Prediksi Nilai G3<br>
+            <span style="font-size: 3rem;">{pred:.2f}</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Interpretasi hasil
+        if pred >= 16:
+            st.success("🌟 **Excellent!** Prediksi menunjukkan nilai sangat baik!")
+        elif pred >= 14:
+            st.success("✨ **Very Good!** Prediksi menunjukkan nilai baik!")
+        elif pred >= 12:
+            st.info("👍 **Good!** Prediksi menunjukkan nilai cukup baik!")
+        elif pred >= 10:
+            st.warning("⚠️ **Fair!** Prediksi menunjukkan nilai cukup, perlu peningkatan!")
+        else:
+            st.error("🔻 **Needs Improvement!** Prediksi menunjukkan nilai kurang, butuh usaha lebih!")
+        
+        st.markdown("---")
+        st.success("✅ **Prediksi Lengkap:** Prediksi ini menggunakan semua fitur (numerik + kategorikal)")
+
+# ================================
+# Page: Analisis Data Numerik
+# ================================
+elif page == "📊 Analisis Data Numerik":
+    st.title("📊 Analisis Data Numerik")
+    st.markdown("---")
+    
+    # Load raw data
+    df = pd.read_csv("data/student-mat.csv", sep=";")
+    
+    numeric_cols = ['age', 'Medu', 'Fedu', 'traveltime', 'studytime', 'failures', 
+                    'famrel', 'freetime', 'goout', 'Dalc', 'Walc', 'health', 'absences', 'G1', 'G2', 'G3']
+    
+    st.subheader("📋 Statistik Deskriptif")
+    st.dataframe(df[numeric_cols].describe(), use_container_width=True)
+    
+    st.markdown("---")
+    st.subheader("📈 Distribusi Data Numerik")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        selected_feature = st.selectbox("Pilih Fitur untuk Visualisasi:", numeric_cols)
+    
+    with col2:
+        chart_type = st.selectbox("Jenis Chart:", ["Histogram", "Box Plot"])
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    if chart_type == "Histogram":
+        ax.hist(df[selected_feature], bins=20, color='skyblue', edgecolor='black')
+        ax.set_xlabel(selected_feature)
+        ax.set_ylabel('Frekuensi')
+        ax.set_title(f'Distribusi {selected_feature}')
+    else:
+        ax.boxplot(df[selected_feature], vert=True)
+        ax.set_ylabel(selected_feature)
+        ax.set_title(f'Box Plot {selected_feature}')
+    
+    st.pyplot(fig)
+    
+    st.markdown("---")
+    st.subheader("🔗 Korelasi dengan Nilai G3")
+    
+    correlations = df[numeric_cols].corr()['G3'].sort_values(ascending=False)
+    
+    fig, ax = plt.subplots(figsize=(10, 8))
+    correlations.drop('G3').plot(kind='barh', ax=ax, color='coral')
+    ax.set_xlabel('Korelasi dengan G3')
+    ax.set_title('Korelasi Fitur Numerik dengan Nilai G3')
+    ax.grid(axis='x', alpha=0.3)
+    
+    st.pyplot(fig)
+
+# ================================
+# Page: Analisis Data Kategorikal
+# ================================
+elif page == "📋 Analisis Data Kategorikal":
+    st.title("📋 Analisis Data Kategorikal")
+    st.markdown("---")
+    
+    # Load raw data
+    df = pd.read_csv("data/student-mat.csv", sep=";")
+    
+    categorical_cols = ['school', 'sex', 'address', 'famsize', 'Pstatus', 'Mjob', 'Fjob', 
+                        'reason', 'guardian', 'schoolsup', 'famsup', 'paid', 'activities', 
+                        'nursery', 'higher', 'internet', 'romantic']
+    
+    st.subheader("📊 Distribusi Data Kategorikal")
+    
+    selected_cat = st.selectbox("Pilih Fitur Kategorikal:", categorical_cols)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write(f"**Distribusi {selected_cat}**")
+        value_counts = df[selected_cat].value_counts()
+        st.dataframe(value_counts.reset_index().rename(columns={'index': selected_cat, selected_cat: 'Count'}), 
+                     use_container_width=True)
+    
+    with col2:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        value_counts.plot(kind='bar', ax=ax, color='steelblue')
+        ax.set_title(f'Distribusi {selected_cat}')
+        ax.set_xlabel(selected_cat)
+        ax.set_ylabel('Jumlah')
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
+    
+    st.markdown("---")
+    st.subheader("📈 Rata-rata G3 Berdasarkan Kategori")
+    
+    avg_g3 = df.groupby(selected_cat)['G3'].mean().sort_values(ascending=False)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    avg_g3.plot(kind='barh', ax=ax, color='lightcoral')
+    ax.set_xlabel('Rata-rata Nilai G3')
+    ax.set_title(f'Rata-rata G3 Berdasarkan {selected_cat}')
+    ax.grid(axis='x', alpha=0.3)
+    
+    st.pyplot(fig)
+
+# ================================
+# Page: Evaluasi Model
+# ================================
+elif page == "📈 Evaluasi Model":
+    st.title("📈 Evaluasi Performa Model")
+    st.markdown("---")
+    
+    # Prepare scaled data for ANN
+    scaler_eval = StandardScaler()
+    X_train_scaled = scaler_eval.fit_transform(X_train)
+    X_test_scaled = scaler_eval.transform(X_test)
+    
+    # Predictions
+    with st.spinner('⏳ Menghitung prediksi...'):
+        y_pred_ann = ann_model.predict(X_test_scaled, verbose=0).flatten()
+        y_pred_rf = rf_model.predict(X_test)
+    
+    # Calculate metrics
+    def evaluate_model(y_true, y_pred):
+        mae = mean_absolute_error(y_true, y_pred)
+        mse = mean_squared_error(y_true, y_pred)
+        rmse = np.sqrt(mse)
+        r2 = r2_score(y_true, y_pred)
+        return mae, mse, rmse, r2
+    
+    mae_ann, mse_ann, rmse_ann, r2_ann = evaluate_model(y_test, y_pred_ann)
+    mae_rf, mse_rf, rmse_rf, r2_rf = evaluate_model(y_test, y_pred_rf)
+    
+    # Display metrics
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: #e3f2fd; margin-bottom: 1rem;'>
+            <h3 style='color: #1976d2; text-align: center;'>🧠 Artificial Neural Network (ANN)</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>MAE:</strong> {mae_ann:.4f}</p>
+        </div>
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>MSE:</strong> {mse_ann:.4f}</p>
+        </div>
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>RMSE:</strong> {rmse_ann:.4f}</p>
+        </div>
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>R²:</strong> {r2_ann:.4f}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: #e8f5e9; margin-bottom: 1rem;'>
+            <h3 style='color: #388e3c; text-align: center;'>🌲 Random Forest</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>MAE:</strong> {mae_rf:.4f}</p>
+        </div>
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>MSE:</strong> {mse_rf:.4f}</p>
+        </div>
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>RMSE:</strong> {rmse_rf:.4f}</p>
+        </div>
+        <div style='padding: 1rem; border-radius: 8px; background-color: #f5f5f5; margin-bottom: 0.5rem;'>
+            <p style='margin: 0;'><strong>R²:</strong> {r2_rf:.4f}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Comparison
+    st.markdown("---")
+    st.subheader("📊 Perbandingan Performa Model")
+    
+    metrics_df = pd.DataFrame({
+        'Metric': ['MAE', 'MSE', 'RMSE', 'R²'],
+        'ANN': [mae_ann, mse_ann, rmse_ann, r2_ann],
+        'Random Forest': [mae_rf, mse_rf, rmse_rf, r2_rf]
+    })
+    
+    st.dataframe(metrics_df.set_index('Metric'), use_container_width=True)
+    
+    # Visualization
+    st.markdown("---")
+    st.subheader("📈 Visualisasi Hasil Prediksi")
+    
+    tab1, tab2, tab3 = st.tabs(["Actual vs Predicted", "Residual Plot", "Error Distribution"])
+    
+    with tab1:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        
+        # ANN
+        axes[0].scatter(y_test, y_pred_ann, alpha=0.5, color='blue')
+        axes[0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+        axes[0].set_xlabel('Actual G3')
+        axes[0].set_ylabel('Predicted G3')
+        axes[0].set_title(f'ANN (R²={r2_ann:.4f})')
+        axes[0].grid(True, alpha=0.3)
+        
+        # Random Forest
+        axes[1].scatter(y_test, y_pred_rf, alpha=0.5, color='green')
+        axes[1].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+        axes[1].set_xlabel('Actual G3')
+        axes[1].set_ylabel('Predicted G3')
+        axes[1].set_title(f'Random Forest (R²={r2_rf:.4f})')
+        axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        st.pyplot(fig)
+    
+    with tab2:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        
+        # ANN Residuals
+        residuals_ann = y_test - y_pred_ann
+        axes[0].scatter(y_pred_ann, residuals_ann, alpha=0.5, color='blue')
+        axes[0].axhline(y=0, color='r', linestyle='--', lw=2)
+        axes[0].set_xlabel('Predicted G3')
+        axes[0].set_ylabel('Residuals')
+        axes[0].set_title('ANN - Residual Plot')
+        axes[0].grid(True, alpha=0.3)
+        
+        # Random Forest Residuals
+        residuals_rf = y_test - y_pred_rf
+        axes[1].scatter(y_pred_rf, residuals_rf, alpha=0.5, color='green')
+        axes[1].axhline(y=0, color='r', linestyle='--', lw=2)
+        axes[1].set_xlabel('Predicted G3')
+        axes[1].set_ylabel('Residuals')
+        axes[1].set_title('Random Forest - Residual Plot')
+        axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        st.pyplot(fig)
+    
+    with tab3:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        
+        # ANN Error Distribution
+        axes[0].hist(residuals_ann, bins=20, color='blue', alpha=0.7, edgecolor='black')
+        axes[0].set_xlabel('Prediction Error')
+        axes[0].set_ylabel('Frequency')
+        axes[0].set_title('ANN - Error Distribution')
+        axes[0].axvline(x=0, color='r', linestyle='--', lw=2)
+        axes[0].grid(True, alpha=0.3)
+        
+        # Random Forest Error Distribution
+        axes[1].hist(residuals_rf, bins=20, color='green', alpha=0.7, edgecolor='black')
+        axes[1].set_xlabel('Prediction Error')
+        axes[1].set_ylabel('Frequency')
+        axes[1].set_title('Random Forest - Error Distribution')
+        axes[1].axvline(x=0, color='r', linestyle='--', lw=2)
+        axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        st.pyplot(fig)
+
+# ================================
+# Footer
+# ================================
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666;'>
+    <p>📚 Sistem Prediksi Nilai Siswa menggunakan Machine Learning</p>
+    <p>Algoritma: ANN & Random Forest | Data: Student Performance Dataset</p>
+</div>
+""", unsafe_allow_html=True)
