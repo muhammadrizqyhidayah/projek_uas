@@ -27,6 +27,84 @@ st.markdown("""
     .main {
         padding: 2rem;
     }
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
+    }
+    
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    
+    /* Sidebar Title */
+    [data-testid="stSidebar"] h1 {
+        color: white !important;
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        text-align: center;
+        padding: 1rem 0;
+        margin-bottom: 1.5rem !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Sidebar Text */
+    [data-testid="stSidebar"] p {
+        color: #e0e0e0 !important;
+        font-size: 0.95rem;
+    }
+    
+    /* Radio Button Container */
+    [data-testid="stSidebar"] .stRadio {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    /* Radio Button Label */
+    [data-testid="stSidebar"] .stRadio label {
+        color: white !important;
+        font-weight: 600 !important;
+        margin-bottom: 0.8rem !important;
+    }
+    
+    /* Radio Button Options */
+    [data-testid="stSidebar"] .stRadio > div {
+        gap: 0.5rem;
+    }
+    
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.8rem 1rem;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        margin: 0.3rem 0 !important;
+    }
+    
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateX(5px);
+    }
+    
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] span {
+        color: white !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Selected Radio Button */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"][data-checked="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transform: translateX(5px);
+    }
+    
+    /* Main Content */
     .stButton>button {
         width: 100%;
         background-color: #4CAF50;
@@ -108,13 +186,34 @@ def load_data():
 X_train, X_test, y_train, y_test = load_data()
 
 # ================================
+# ================================
 # Sidebar Navigation
 # ================================
+st.sidebar.markdown("""
+<div style='text-align: center; padding: 1rem 0 1.5rem 0;'>
+    <h1 style='font-size: 2.5rem; margin: 0;'>🎓</h1>
+    <p style='color: white; font-size: 0.9rem; margin: 0.5rem 0 0 0; opacity: 0.9;'>Student Performance Prediction</p>
+</div>
+""", unsafe_allow_html=True)
+
 st.sidebar.title("🎯 Menu Navigasi")
+st.sidebar.markdown("<p style='color: #e0e0e0; font-size: 0.85rem; margin-bottom: 1rem;'>Pilih menu untuk memulai</p>", unsafe_allow_html=True)
+
 page = st.sidebar.radio(
     "Pilih Halaman:",
-    ["🏠 Dashboard", "🔢 Prediksi Data Numerik", "✅ Prediksi Data Kategorikal", "📊 Analisis Data Numerik", "📋 Analisis Data Kategorikal", "📈 Evaluasi Model"]
+    ["🏠 Dashboard", "🔢 Prediksi Data Numerik", "✅ Prediksi Data Kategorikal", "📊 Analisis Data Numerik", "📋 Analisis Data Kategorikal", "📈 Evaluasi Model"],
+    label_visibility="collapsed"
 )
+
+# Sidebar Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+<div style='text-align: center; padding: 1rem 0; color: rgba(255, 255, 255, 0.7);'>
+    <p style='font-size: 0.8rem; margin: 0;'>Powered by</p>
+    <p style='font-size: 0.9rem; font-weight: 600; margin: 0.3rem 0;'>ANN & Random Forest</p>
+    <p style='font-size: 0.75rem; margin: 0.5rem 0 0 0;'>© 2024 ML Project</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ================================
 # Page: Dashboard
