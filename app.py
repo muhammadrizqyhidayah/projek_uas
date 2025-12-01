@@ -760,6 +760,147 @@ elif page == "📈 Evaluasi Model":
         
         plt.tight_layout()
         st.pyplot(fig)
+    
+    # ================================
+    # Best Model Section
+    # ================================
+    st.markdown("---")
+    st.markdown("## 🏆 Model Terbaik")
+    
+    # Determine best model based on multiple metrics
+    metrics_comparison = {
+        'MAE': (mae_ann, mae_rf, 'lower'),
+        'MSE': (mse_ann, mse_rf, 'lower'),
+        'RMSE': (rmse_ann, rmse_rf, 'lower'),
+        'R²': (r2_ann, r2_rf, 'higher')
+    }
+    
+    ann_wins = 0
+    rf_wins = 0
+    
+    for metric, (ann_val, rf_val, better) in metrics_comparison.items():
+        if better == 'lower':
+            if ann_val < rf_val:
+                ann_wins += 1
+            else:
+                rf_wins += 1
+        else:  # higher is better (R²)
+            if ann_val > rf_val:
+                ann_wins += 1
+            else:
+                rf_wins += 1
+    
+    # Determine winner
+    if ann_wins > rf_wins:
+        best_model = "ANN"
+        best_color = "#1976d2"
+        best_bg = "#e3f2fd"
+        best_icon = "🧠"
+        best_name = "Artificial Neural Network"
+        best_mae = mae_ann
+        best_mse = mse_ann
+        best_rmse = rmse_ann
+        best_r2 = r2_ann
+        win_count = ann_wins
+    else:
+        best_model = "Random Forest"
+        best_color = "#388e3c"
+        best_bg = "#e8f5e9"
+        best_icon = "🌲"
+        best_name = "Random Forest"
+        best_mae = mae_rf
+        best_mse = mse_rf
+        best_rmse = rmse_rf
+        best_r2 = r2_rf
+        win_count = rf_wins
+    
+    # Display best model with attractive UI
+    st.markdown(f"""
+    <div style='padding: 2rem; border-radius: 15px; background: linear-gradient(135deg, {best_color} 0%, {best_color}dd 100%); color: white; margin-bottom: 2rem; box-shadow: 0 8px 16px rgba(0,0,0,0.2);'>
+        <div style='text-align: center;'>
+            <h1 style='color: white; margin: 0; font-size: 3rem;'>{best_icon}</h1>
+            <h2 style='color: white; margin: 0.5rem 0;'>{best_name}</h2>
+            <p style='color: white; font-size: 1.2rem; margin: 0;'>Model dengan Performa Terbaik</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Performance Summary
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: {best_bg}; text-align: center; border: 3px solid {best_color};'>
+            <h3 style='color: {best_color}; margin: 0;'>📊 Skor Kemenangan</h3>
+            <h1 style='color: {best_color}; margin: 0.5rem 0; font-size: 3rem;'>{win_count}/4</h1>
+            <p style='color: {best_color}; margin: 0;'>Metrik Terbaik</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: {best_bg}; text-align: center; border: 3px solid {best_color};'>
+            <h3 style='color: {best_color}; margin: 0;'>🎯 Akurasi (R²)</h3>
+            <h1 style='color: {best_color}; margin: 0.5rem 0; font-size: 3rem;'>{best_r2:.3f}</h1>
+            <p style='color: {best_color}; margin: 0;'>Coefficient of Determination</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: {best_bg}; text-align: center; border: 3px solid {best_color};'>
+            <h3 style='color: {best_color}; margin: 0;'>📉 Error Rata-rata</h3>
+            <h1 style='color: {best_color}; margin: 0.5rem 0; font-size: 3rem;'>{best_mae:.3f}</h1>
+            <p style='color: {best_color}; margin: 0;'>Mean Absolute Error</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Detailed Comparison Table
+    st.markdown(f"""
+    <div style='padding: 1.5rem; border-radius: 10px; background-color: #f8f9fa; border-left: 5px solid {best_color};'>
+        <h3 style='color: {best_color}; margin-top: 0;'>📋 Ringkasan Metrik Model Terbaik</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+    
+    with metric_col1:
+        st.metric("MAE (Lower is Better)", f"{best_mae:.4f}", 
+                  delta=f"{abs(mae_ann - mae_rf):.4f}" if best_model == "ANN" else f"-{abs(mae_ann - mae_rf):.4f}",
+                  delta_color="inverse")
+    
+    with metric_col2:
+        st.metric("MSE (Lower is Better)", f"{best_mse:.4f}",
+                  delta=f"{abs(mse_ann - mse_rf):.4f}" if best_model == "ANN" else f"-{abs(mse_ann - mse_rf):.4f}",
+                  delta_color="inverse")
+    
+    with metric_col3:
+        st.metric("RMSE (Lower is Better)", f"{best_rmse:.4f}",
+                  delta=f"{abs(rmse_ann - rmse_rf):.4f}" if best_model == "ANN" else f"-{abs(rmse_ann - rmse_rf):.4f}",
+                  delta_color="inverse")
+    
+    with metric_col4:
+        st.metric("R² (Higher is Better)", f"{best_r2:.4f}",
+                  delta=f"{abs(r2_ann - r2_rf):.4f}" if best_model == "ANN" else f"{abs(r2_ann - r2_rf):.4f}",
+                  delta_color="normal")
+    
+    # Recommendation
+    st.markdown("---")
+    st.markdown(f"""
+    <div style='padding: 2rem; border-radius: 10px; background-color: {best_bg}; border: 2px solid {best_color};'>
+        <h3 style='color: {best_color};'>💡 Rekomendasi</h3>
+        <p style='font-size: 1.1rem; line-height: 1.8;'>
+            Berdasarkan evaluasi komprehensif terhadap 4 metrik utama (MAE, MSE, RMSE, R²), 
+            <strong style='color: {best_color};'>{best_name}</strong> menunjukkan performa terbaik dengan memenangkan 
+            <strong style='color: {best_color};'>{win_count} dari 4</strong> metrik evaluasi.
+            <br><br>
+            Model ini direkomendasikan untuk digunakan dalam prediksi nilai akhir siswa (G3) karena 
+            memberikan prediksi yang lebih akurat dengan error yang lebih kecil.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ================================
 # Footer
