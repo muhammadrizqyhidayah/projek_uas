@@ -134,9 +134,12 @@ if page == "🏠 Dashboard":
     # Overview
     st.markdown("### 📖 Tentang Sistem")
     st.write("""
-    Sistem ini menggunakan **Machine Learning** untuk memprediksi nilai akhir siswa (G3) berdasarkan berbagai faktor 
+    Sistem ini menggunakan **Machine Learning** dan **Deep Learning** untuk memprediksi nilai akhir siswa (G3) berdasarkan berbagai faktor 
     seperti demografi, kondisi sosial ekonomi, dan performa akademik sebelumnya. Dataset yang digunakan adalah 
     **Student Performance Dataset** dengan 41 fitur input.
+    
+    - **Machine Learning**: Random Forest (Ensemble Learning)
+    - **Deep Learning**: Artificial Neural Network (ANN)
     """)
     
     st.markdown("---")
