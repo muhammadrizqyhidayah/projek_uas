@@ -113,114 +113,194 @@ X_train, X_test, y_train, y_test = load_data()
 st.sidebar.title("🎯 Menu Navigasi")
 page = st.sidebar.radio(
     "Pilih Halaman:",
-    ["🏠 Prediksi Nilai", "🔢 Prediksi Data Numerik", "✅ Prediksi Data Kategorikal", "📊 Analisis Data Numerik", "📋 Analisis Data Kategorikal", "📈 Evaluasi Model"]
+    ["🏠 Dashboard", "🔢 Prediksi Data Numerik", "✅ Prediksi Data Kategorikal", "📊 Analisis Data Numerik", "📋 Analisis Data Kategorikal", "📈 Evaluasi Model"]
 )
 
 # ================================
-# Page: Prediksi Nilai
+# Page: Dashboard
 # ================================
-if page == "🏠 Prediksi Nilai":
-    st.title("🎓 Prediksi Nilai Akhir Siswa (G3)")
+if page == "🏠 Dashboard":
+    st.title("🏠 Dashboard - Sistem Prediksi Nilai Siswa")
     st.markdown("---")
-    st.info("📊 Aplikasi ini menggunakan 2 algoritma Machine Learning: **Artificial Neural Network (ANN)** & **Random Forest**")
-
-    # ================================
-    # Input Features dengan Tabs
-    # ================================
-    st.markdown("### 📝 Input Data Siswa")
-
-    # Definisi fitur dengan kategori
-    numeric_features = {
-        'age': ('Umur', 15, 22),
-        'Medu': ('Pendidikan Ibu (0-4)', 0, 4),
-        'Fedu': ('Pendidikan Ayah (0-4)', 0, 4),
-        'traveltime': ('Waktu Perjalanan (1-4)', 1, 4),
-        'studytime': ('Waktu Belajar (1-4)', 1, 4),
-        'failures': ('Jumlah Kegagalan (0-4)', 0, 4),
-        'famrel': ('Hubungan Keluarga (1-5)', 1, 5),
-        'freetime': ('Waktu Luang (1-5)', 1, 5),
-        'goout': ('Keluar bersama Teman (1-5)', 1, 5),
-        'Dalc': ('Konsumsi Alkohol Hari Kerja (1-5)', 1, 5),
-        'Walc': ('Konsumsi Alkohol Akhir Pekan (1-5)', 1, 5),
-        'health': ('Status Kesehatan (1-5)', 1, 5),
-        'absences': ('Jumlah Absen (0-93)', 0, 93),
-        'G1': ('Nilai Periode 1 (0-20)', 0, 20),
-        'G2': ('Nilai Periode 2 (0-20)', 0, 20)
-    }
-
-    categorical_features = [
-        'school_MS', 'sex_M', 'address_U', 'famsize_LE3', 'Pstatus_T',
-        'Mjob_health', 'Mjob_other', 'Mjob_services', 'Mjob_teacher',
-        'Fjob_health', 'Fjob_other', 'Fjob_services', 'Fjob_teacher',
-        'reason_home', 'reason_other', 'reason_reputation',
-        'guardian_mother', 'guardian_other',
-        'schoolsup_yes', 'famsup_yes', 'paid_yes', 'activities_yes', 'nursery_yes',
-        'higher_yes', 'internet_yes', 'romantic_yes'
-    ]
-
-    tab1, tab2 = st.tabs(["📊 Data Numerik", "✅ Data Kategorikal"])
-
-    inputs = []
-
-    with tab1:
-        cols = st.columns(3)
-        for idx, (key, (label, min_val, max_val)) in enumerate(numeric_features.items()):
-            with cols[idx % 3]:
-                val = st.number_input(label, min_value=min_val, max_value=max_val, value=min_val, step=1)
-                inputs.append(float(val))
-
-    with tab2:
-        st.write("**Pilih fitur kategorikal yang sesuai (1 = Ya, 0 = Tidak)**")
-        cols = st.columns(3)
-        for idx, feature in enumerate(categorical_features):
-            with cols[idx % 3]:
-                val = st.checkbox(feature.replace('_', ' ').title(), value=False)
-                inputs.append(1.0 if val else 0.0)
-
-    inputs = np.array(inputs).reshape(1, -1)
-
-    # ================================
-    # Predict Section
-    # ================================
+    
+    # Header
+    st.markdown("""
+    <div style='padding: 1.5rem; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 2rem;'>
+        <h2 style='color: white; margin: 0;'>📚 Prediksi Nilai Akhir Siswa (G3)</h2>
+        <p style='color: white; margin: 0.5rem 0 0 0;'>Menggunakan Artificial Neural Network (ANN) & Random Forest</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Overview
+    st.markdown("### 📖 Tentang Sistem")
+    st.write("""
+    Sistem ini menggunakan **Machine Learning** untuk memprediksi nilai akhir siswa (G3) berdasarkan berbagai faktor 
+    seperti demografi, kondisi sosial ekonomi, dan performa akademik sebelumnya. Dataset yang digunakan adalah 
+    **Student Performance Dataset** dengan 41 fitur input.
+    """)
+    
     st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
-
-    with col2:
-        st.markdown("### 🤖 Pilih Algoritma Prediksi")
-        algo = st.selectbox(
-            "Algoritma:",
-            ["Artificial Neural Network (ANN)", "Random Forest"],
-            label_visibility="collapsed"
-        )
-        
-        predict_btn = st.button("🚀 PREDIKSI NILAI", use_container_width=True)
-
-    if predict_btn:
-        with st.spinner('⏳ Sedang memproses prediksi...'):
-            if algo == "Artificial Neural Network (ANN)":
-                X_scaled = scaler.transform(inputs)
-                pred = ann_model.predict(X_scaled, verbose=0)[0][0]
-            else:
-                pred = rf_model.predict(inputs)[0]
-        
-        st.markdown(f"""
-        <div class="prediction-box">
-            🎯 Hasil Prediksi Nilai G3<br>
-            <span style="font-size: 3rem;">{pred:.2f}</span>
+    
+    # Algoritma Section
+    st.markdown("## 🤖 Cara Kerja Algoritma")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: #e3f2fd; height: 100%;'>
+            <h3 style='color: #1976d2;'>🧠 Artificial Neural Network (ANN)</h3>
         </div>
         """, unsafe_allow_html=True)
         
-        # Interpretasi hasil
-        if pred >= 16:
-            st.success("🌟 **Excellent!** Prediksi menunjukkan nilai sangat baik!")
-        elif pred >= 14:
-            st.success("✨ **Very Good!** Prediksi menunjukkan nilai baik!")
-        elif pred >= 12:
-            st.info("👍 **Good!** Prediksi menunjukkan nilai cukup baik!")
-        elif pred >= 10:
-            st.warning("⚠️ **Fair!** Prediksi menunjukkan nilai cukup, perlu peningkatan!")
-        else:
-            st.error("🔻 **Needs Improvement!** Prediksi menunjukkan nilai kurang, butuh usaha lebih!")
+        st.markdown("#### 📋 Arsitektur Model:")
+        st.write("""
+        - **Input Layer**: 41 fitur (numerik + kategorikal)
+        - **Hidden Layer 1**: 128 neuron + ReLU activation + Dropout (0.2)
+        - **Hidden Layer 2**: 64 neuron + ReLU activation + Dropout (0.2)
+        - **Hidden Layer 3**: 32 neuron + ReLU activation
+        - **Output Layer**: 1 neuron (prediksi nilai G3)
+        """)
+        
+        st.markdown("#### ⚙️ Alur Kerja:")
+        st.write("""
+        1. **Input Processing**: Data dinormalisasi menggunakan StandardScaler
+        2. **Forward Propagation**: 
+           - Data melewati setiap layer
+           - Setiap neuron melakukan operasi: output = activation(weights × input + bias)
+        3. **Activation**: Fungsi ReLU untuk non-linearitas
+        4. **Regularization**: Dropout untuk mencegah overfitting
+        5. **Output**: Nilai prediksi G3
+        """)
+        
+        st.markdown("#### 📊 Training:")
+        st.write("""
+        - **Loss Function**: Mean Squared Error (MSE)
+        - **Optimizer**: Adam
+        - **Metrics**: Mean Absolute Error (MAE)
+        - **Early Stopping**: Monitoring validation loss
+        - **Epochs**: Maksimal 300 dengan patience 15
+        """)
+        
+        st.info("✅ **Keunggulan ANN**: Mampu menangkap pola non-linear yang kompleks dalam data")
+    
+    with col2:
+        st.markdown("""
+        <div style='padding: 1.5rem; border-radius: 10px; background-color: #e8f5e9; height: 100%;'>
+            <h3 style='color: #388e3c;'>🌲 Random Forest</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("#### 📋 Konfigurasi Model:")
+        st.write("""
+        - **N Estimators**: 300 pohon keputusan
+        - **Max Depth**: None (unlimited)
+        - **Task**: Regression
+        - **Random State**: 42 (reproducibility)
+        """)
+        
+        st.markdown("#### ⚙️ Alur Kerja:")
+        st.write("""
+        1. **Bootstrap Sampling**: 
+           - Membuat 300 subset data secara random dengan replacement
+        2. **Decision Tree Building**:
+           - Setiap tree dibangun dengan subset fitur random
+           - Split berdasarkan MSE minimization
+        3. **Tree Growing**:
+           - Nodes di-split hingga pure atau max depth
+           - Setiap leaf menyimpan nilai prediksi
+        4. **Ensemble Prediction**:
+           - Prediksi dari 300 trees di-aggregate
+           - Output = rata-rata dari semua predictions
+        5. **Feature Importance**: Menghitung kontribusi setiap fitur
+        """)
+        
+        st.markdown("#### 📊 Karakteristik:")
+        st.write("""
+        - **Bagging**: Mengurangi variance dengan averaging
+        - **Feature Randomness**: Decorrelation antar trees
+        - **Robust**: Tahan terhadap outliers
+        - **No Scaling Required**: Bekerja dengan data asli
+        """)
+        
+        st.success("✅ **Keunggulan Random Forest**: Robust, interpretable, dan handling missing values")
+    
+    st.markdown("---")
+    
+    # Comparison
+    st.markdown("## 📊 Perbandingan Algoritma")
+    
+    comparison_data = {
+        "Aspek": ["Preprocessing", "Training Time", "Interpretability", "Overfitting Risk", "Feature Scaling", "Handling Non-linear"],
+        "ANN": ["Perlu normalisasi", "Lebih lama", "Low (Black box)", "Medium-High", "Required", "Excellent"],
+        "Random Forest": ["Minimal", "Medium", "High (Feature importance)", "Low", "Not required", "Good"]
+    }
+    
+    comparison_df = pd.DataFrame(comparison_data)
+    st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    
+    # Dataset Info
+    st.markdown("## 📁 Informasi Dataset")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Sampel", "395")
+    with col2:
+        st.metric("Jumlah Fitur", "41")
+    with col3:
+        st.metric("Fitur Numerik", "15")
+    with col4:
+        st.metric("Fitur Kategorikal", "26")
+    
+    st.markdown("#### 📝 Fitur Input:")
+    
+    feature_col1, feature_col2 = st.columns(2)
+    
+    with feature_col1:
+        st.markdown("**🔢 Fitur Numerik:**")
+        st.write("""
+        - Demografi: age
+        - Pendidikan Orang Tua: Medu, Fedu
+        - Akademik: studytime, failures, absences, G1, G2
+        - Sosial: famrel, freetime, goout, Dalc, Walc
+        - Lainnya: traveltime, health
+        """)
+    
+    with feature_col2:
+        st.markdown("**✅ Fitur Kategorikal:**")
+        st.write("""
+        - Sekolah & Demografi: school, sex, address, famsize
+        - Keluarga: Pstatus, Mjob, Fjob, guardian
+        - Dukungan: schoolsup, famsup, paid, activities
+        - Aspirasi: higher, nursery, internet
+        - Lainnya: reason, romantic
+        """)
+    
+    st.markdown("---")
+    
+    # Navigation Guide
+    st.markdown("## 🧭 Panduan Penggunaan")
+    
+    st.write("""
+    1. **🔢 Prediksi Data Numerik**: Input hanya data numerik, fitur kategorikal diasumsikan 0
+    2. **✅ Prediksi Data Kategorikal**: Input lengkap (numerik + kategorikal) untuk prediksi akurat
+    3. **📊 Analisis Data Numerik**: Eksplorasi distribusi dan korelasi fitur numerik
+    4. **📋 Analisis Data Kategorikal**: Eksplorasi distribusi dan pengaruh fitur kategorikal
+    5. **📈 Evaluasi Model**: Melihat performa model dengan berbagai metrik dan visualisasi
+    """)
+    
+    st.markdown("---")
+    
+    # Footer
+    st.markdown("""
+    <div style='text-align: center; padding: 2rem; background-color: #f5f5f5; border-radius: 10px;'>
+        <h4>🎯 Mulai Prediksi Sekarang!</h4>
+        <p>Pilih menu di sidebar untuk melakukan prediksi atau analisis data</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ================================
 # Page: Prediksi Data Numerik
